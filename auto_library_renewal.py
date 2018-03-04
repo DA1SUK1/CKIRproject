@@ -29,9 +29,8 @@ def get_burrowed_books(driver):
         #pdb.set_trace()
         yield (renewal_code, renewal_date)
         
-def is_renewal_date(book):
-    today = datetime.today()
-    #pdb.set_trace()
+def is_renewal_date(book, today):
+    pdb.set_trace()
     if today.year == int(book[1][0]) and today.month == int(book[1][1]) and today.day == int(book[1][2]):
         return True
     else:
@@ -47,34 +46,37 @@ def renewal(driver, book):
     Alert(driver).accept()
     sleep(10)
     
-def write_log(f, isRenewaled):
-    today = datetime.today()
-    if isRenewaled:
-        f.write(str(today.year) + "/" + str(today.month) + "/" + str(today.day) + " 1 book renewal\n")
-    else:
-        f.write(str(today.year) + "/" + str(today.month) + "/" + str(today.day) + " " + str(today.hour) + ":" + str(today.minute) + " " + " 1 book not renewal\n")
-    
 if __name__=="__main__":
     geckodriver_path = "/home/gooninn/geckodriver"
     recordfile_path = "/home/gooninn/renewal_record"
+    
+    today = datetime.today()
+    renewaled_book = 0
+    not_renewaled_book = 0
+    
     userid = sys.argv[1]
     userpw = sys.argv[2]
     
-    options = Options()
-    options.add_argument("--headless")
-    driver = webdriver.Firefox(firefox_options=options, executable_path=geckodriver_path)
-    
     f = open(recordfile_path, "a")
     
-    pnu_library_login(driver, userid, userpw)
+    try:
+        options = Options()
+        options.add_argument("--headless")
+        driver = webdriver.Firefox(firefox_options=options, executable_path=geckodriver_path)
     
-    for book in get_burrowed_books(driver):
-        if is_renewal_date(book):
-            renewal(driver, book)
-            write_log(f, True)
-        else:
-            #print("here\n")
-            write_log(f, False)
+        pnu_library_login(driver, userid, userpw)
+    
+        for book in get_burrowed_books(driver):
+            if is_renewal_date(book, today):
+                renewal(driver, book)
+                renewaled_book = renewaled_book + 1
+            else:
+                not_renewaled_book = not_renewaled_book + 1
         
-    f.close()
-    driver.quit()
+        driver.quit()
+    except:
+        f.write("crontab worked. but error occured in script.\n")
+    finally:
+        f.write(str(today.year) + "/" + str(today.month) + "/" + str(today.day) +  " " + str(today.hour) + ":" + str(today.minute) + " " + str(renewaled_book) + " book renewal\n")
+        f.write(str(today.year) + "/" + str(today.month) + "/" + str(today.day) + " " + str(today.hour) + ":" + str(today.minute) + " " + str(not_renewaled_book) + " book not renewal\n")
+        f.close()
