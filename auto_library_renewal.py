@@ -4,7 +4,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.alert import Alert
 from time import sleep
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, date
 import re
 import sys
 import pdb
@@ -19,19 +19,22 @@ def pnu_library_login(driver, id_string, pw_string):
     sleep(3)
     
 def get_burrowed_books(driver):
+    burrowed_books = []
     driver.get("https://pulip.pusan.ac.kr/mylibrary/Circulation.ax")
     sleep(10)
     #pdb.set_trace()
     soup = BeautifulSoup(driver.page_source, "html.parser")
     for book in soup.findAll("tr", {"class":re.compile("tbRecord*")}):
-        renewal_date = tuple(book.findAll("td")[4].get_text().strip().split('/'))
-        renewal_code = book.findAll("td")[1].get_text().strip()
+        renewal_date = date(*(int(x) for x in book.findAll("td")[4].get_text().strip().split('/')))
+        book_code = book.findAll("td")[1].get_text().strip()
+        is_renewaled = True if book.findAll("td")[5].get_text().strip()[0] == '1' else False
         #pdb.set_trace()
-        yield (renewal_code, renewal_date)
+        burrowed_books.append({"book_code":book_code, "renewal_date":renewal_date, "is_renewaled":is_renewaled})
+    return sorted(burrowed_books, key = lambda k : k["is_renewaled"], reverse = True) #renewaled books come first
         
 def is_renewal_date(book, today):
-    pdb.set_trace()
-    if today.year == int(book[1][0]) and today.month == int(book[1][1]) and today.day == int(book[1][2]):
+    #pdb.set_trace()
+    if today.year == book["renewal_date"].year and today.month == book["renewal_date"].month and today.day == book["renewal_date"].day:
         return True
     else:
         return False
@@ -78,5 +81,5 @@ if __name__=="__main__":
         f.write("crontab worked. but error occured in script.\n")
     finally:
         f.write(str(today.year) + "/" + str(today.month) + "/" + str(today.day) +  " " + str(today.hour) + ":" + str(today.minute) + " " + str(renewaled_book) + " book renewal\n")
-        f.write(str(today.year) + "/" + str(today.month) + "/" + str(today.day) + " " + str(today.hour) + ":" + str(today.minute) + " " + str(not_renewaled_book) + " book not renewal\n")
+        f.write(str(today.year) + "/" + str(today.month) + "/" + str(today.day) + " " + str(today.hour) + ":" + str(today.minute) + " " + str(not_renewaled_book) + " book not renewal\n\n")
         f.close()
