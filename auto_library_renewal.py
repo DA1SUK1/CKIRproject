@@ -10,7 +10,7 @@ import sys
 import pdb
 
 def pnu_library_login(driver, id_string, pw_string):
-    driver.get("https://lib.pusan.ac.kr/login/")
+    driver.get("https://lib.pusan.ac.kr/login/")  # here needs wait
     sleep(10)
     driver.find_element_by_id("id").send_keys(id_string)
     driver.find_element_by_id("pw").send_keys(pw_string)
@@ -20,7 +20,7 @@ def pnu_library_login(driver, id_string, pw_string):
     
 def get_burrowed_books(driver):
     burrowed_books = []
-    driver.get("https://pulip.pusan.ac.kr/mylibrary/Circulation.ax")
+    driver.get("https://pulip.pusan.ac.kr/mylibrary/Circulation.ax") #here needs wait
     sleep(10)
     #pdb.set_trace()
     soup = BeautifulSoup(driver.page_source, "html.parser")
@@ -32,21 +32,25 @@ def get_burrowed_books(driver):
         burrowed_books.append({"book_code":book_code, "renewal_date":renewal_date, "is_renewaled":is_renewaled})
     return sorted(burrowed_books, key = lambda k : k["is_renewaled"], reverse = True) #renewaled books come first
         
-def is_renewal_date(book, today):
+def is_renewal_day(book, today):
     #pdb.set_trace()
-    if today.year == book["renewal_date"].year and today.month == book["renewal_date"].month and today.day == book["renewal_date"].day:
+    if not hasattr(is_renewal_day, "renewal_to_reduce_fee"):   #for static variable in this function
+        is_renewal_day.renewal_to_reduce_fee = False
+    if today.date() == book["renewal_date"] and book["is_renewaled"]:
+        is_renewal_day.renewal_to_reduce_fee = True
+    elif (today.date() == book["renewal_date"] and not book["is_renewaled"]) or is_renewal_day.renewal_to_reduce_fee:
         return True
     else:
         return False
 
 def renewal(driver, book):
-    driver.get("https://pulip.pusan.ac.kr/mylibrary/Circulation.ax")
+    driver.get("https://pulip.pusan.ac.kr/mylibrary/Circulation.ax")  #here needs wait
     sleep(10)
-    driver.find_element_by_id(book[0]).click()
+    driver.find_element_by_id(book[0]).click() #here needs wait
     sleep(10)
-    Alert(driver).accept()
+    Alert(driver).accept() #here needs wait
     sleep(10)
-    Alert(driver).accept()
+    Alert(driver).accept() #here needs wait
     sleep(10)
     
 if __name__=="__main__":
@@ -70,7 +74,7 @@ if __name__=="__main__":
         pnu_library_login(driver, userid, userpw)
     
         for book in get_burrowed_books(driver):
-            if is_renewal_date(book, today):
+            if is_renewal_day(book, today):
                 renewal(driver, book)
                 renewaled_book = renewaled_book + 1
             else:
