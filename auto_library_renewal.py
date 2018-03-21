@@ -36,9 +36,13 @@ def is_renewal_day(book, today):
     #pdb.set_trace()
     if not hasattr(is_renewal_day, "renewal_to_reduce_fee"):   #for static variable in this function
         is_renewal_day.renewal_to_reduce_fee = False
-    if today.date() == book["renewal_date"] and book["is_renewaled"]:
+      
+    if today.date() == book["renewal_date"] and book["is_renewaled"] and not is_renewal_day.renewal_to_reduce_fee:
         is_renewal_day.renewal_to_reduce_fee = True
-    elif (today.date() == book["renewal_date"] and not book["is_renewaled"]) or is_renewal_day.renewal_to_reduce_fee:
+        return False
+    elif book["is_renewaled"]:
+        return False
+    elif today.date() == book["renewal_date"] or is_renewal_day.renewal_to_reduce_fee:
         return True
     else:
         return False
