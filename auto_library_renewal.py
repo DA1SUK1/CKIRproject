@@ -81,10 +81,6 @@ if __name__=="__main__":
         sys.exit()
         
     try:
-        options = Options()
-        options.add_argument("--headless")
-        driver = webdriver.Firefox(firefox_options=options, executable_path=geckodriver_path)
-        
         pnu_library_login(driver, userid, userpw)
         
         for book in get_burrowed_books(driver):
